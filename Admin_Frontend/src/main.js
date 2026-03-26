@@ -1,6 +1,9 @@
-import './assets/main.css'
+// main.js
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router/index'; // Make sure this path is correct
 
-import { createApp } from 'vue'
-import App from './App.vue'
+const app = createApp(App);
 
-createApp(App).mount('#app')
+app.use(router); // ✅ This is necessary!
+app.mount('#app');

@@ -1,92 +1,69 @@
 <template>
-  <div class="page">
-    <h1>Dashboard</h1>
+<div class="page">
+<h1>Dashboard</h1>
 
-    <div class="cards">
-      <div class="card">
-        <h3>Orders Today</h3>
-        <p>{{ ordersToday }}</p>
-      </div>
+<div class="cards">
+<div class="card">
+<h3>Total Orders</h3>
+<p>{{ orders }}</p>
+</div>
 
-      <div class="card">
-        <h3>Best Seller</h3>
-        <p>{{ bestSeller }}</p>
-      </div>
-    </div>
+<div class="card">
+<h3>Total Sales</h3>
+<p>₱ {{ sales }}</p>
+</div>
 
-    <div class="chart">
-      <h3>Weekly Sales</h3>
-      <Bar v-if="chartData" :data="chartData" :options="chartOptions" />
-    </div>
-  </div>
+<div class="card">
+<h3>Products</h3>
+<p>{{ products }}</p>
+</div>
+
+<div class="card alert" v-if="lowStock.length">
+<h3>Low Stock</h3>
+<p>{{ lowStock.length }} items</p>
+</div>
+</div>
+
+<h3>Recent Orders</h3>
+<table>
+<tr>
+<th>Customer</th>
+<th>Total</th>
+<th>Status</th>
+</tr>
+<tr v-for="o in recentOrders" :key="o._id">
+<td>{{ o.customer }}</td>
+<td>{{ o.total }}</td>
+<td>{{ o.status }}</td>
+</tr>
+</table>
+
+</div>
 </template>
 
 <script>
 import axios from "axios"
-import { Bar } from "vue-chartjs"
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale
-} from "chart.js"
-
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale
-)
 
 export default {
-  components: { Bar },
+data() {
+return {
+orders: 0,
+sales: 0,
+products: 0,
+lowStock: [],
+recentOrders: []
+}
+},
 
-  data() {
-    return {
-      ordersToday: 0,
-      bestSeller: "Loading...",
-      chartData: null,
-      chartOptions: {
-        responsive: true
-      }
-    }
-  },
+async mounted() {
+const orders = await axios.get("/api/orders")
+const products = await axios.get("/api/products")
 
-  async mounted() {
-    this.fetchDashboard()
-  },
-
-  methods: {
-    async fetchDashboard() {
-      try {
-        const sales = await axios.get("/api/sales")
-
-        const labels = sales.data.map(s => s.day)
-        const totals = sales.data.map(s => s.totalSales)
-
-        this.chartData = {
-          labels,
-          datasets: [
-            {
-              label: "Sales",
-              data: totals
-            }
-          ]
-        }
-
-        const orders = await axios.get("/api/orders")
-        this.ordersToday = orders.data.length
-
-        this.bestSeller = "Milk Tea" // temporary
-      } catch (err) {
-        console.error(err)
-      }
-    }
-  }
+this.orders = orders.data.length
+this.sales = orders.data.reduce((sum, o) => sum + o.total, 0)
+this.products = products.data.length
+this.lowStock = products.data.filter(p => p.stock <= 10)
+this.recentOrders = orders.data.slice(0,5)
+}
 }
 </script>

@@ -1,34 +1,32 @@
 <template>
 <div class="page">
-<h1>Products</h1>
+<h1>Orders</h1>
 
-<h3>Add Product</h3>
+<h3>Create Order</h3>
 
-<input v-model="newProduct.name" placeholder="Name">
-<input v-model="newProduct.price" placeholder="Price">
-<input v-model="newProduct.stock" placeholder="Stock">
+<input v-model="newOrder.order_number" placeholder="Order Number">
+<input v-model="newOrder.total_amount" placeholder="Total Amount">
+<input v-model="newOrder.payment_method" placeholder="Payment Method">
 
-<button @click="addProduct">Add</button>
+<button @click="addOrder">Add Order</button>
 
-<h3>Product List</h3>
+<h3>Orders List</h3>
 
 <table>
 <tr>
-<th>Name</th>
-<th>Price</th>
-<th>Stock</th>
+<th>Order #</th>
+<th>Total</th>
+<th>Payment</th>
 <th>Action</th>
 </tr>
 
-<tr v-for="p in products" :key="p._id">
-<td>{{ p.name }}</td>
-<td>{{ p.price }}</td>
-<td :class="{low:p.stock<=10}">
-{{ p.stock }}
-</td>
+<tr v-for="o in orders" :key="o._id">
+<td>{{ o.order_number }}</td>
+<td>{{ o.total_amount }}</td>
+<td>{{ o.payment_method }}</td>
 
 <td>
-<button @click="deleteProduct(p._id)">Delete</button>
+<button @click="deleteOrder(o._id)">Delete</button>
 </td>
 
 </tr>
@@ -43,37 +41,52 @@ import axios from "axios"
 export default {
 data(){
 return{
-products:[],
-newProduct:{
-name:"",
-price:0,
-stock:0
+orders:[],
+newOrder:{
+order_number:"",
+total_amount:0,
+payment_method:""
 }
 }
 },
 
 async mounted(){
-const res = await axios.get("/api/products")
-this.products=res.data
+const res = await axios.get("/api/orders")
+this.orders = res.data
 },
 
 methods:{
-async addProduct(){
-const res=await axios.post("/api/products",this.newProduct)
-this.products.push(res.data)
+async addOrder(){
+const res = await axios.post("/api/orders", this.newOrder)
+this.orders.push(res.data)
+
+this.newOrder = {
+order_number:"",
+total_amount:0,
+payment_method:""
+}
 },
 
-async deleteProduct(id){
-await axios.delete(`/api/products/${id}`)
-this.products=this.products.filter(p=>p._id!==id)
+async deleteOrder(id){
+await axios.delete(`/api/orders/${id}`)
+this.orders = this.orders.filter(o => o._id !== id)
 }
 }
 }
 </script>
 
 <style>
-.low{
-color:red;
-font-weight:bold;
+table{
+width:100%;
+border-collapse: collapse;
+}
+
+th, td{
+border:1px solid #ddd;
+padding:8px;
+}
+
+th{
+background:#f4f4f4;
 }
 </style>

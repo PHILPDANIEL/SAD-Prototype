@@ -16,11 +16,12 @@ const app = express()
 app.use(cors())
 app.use(bodyParser.json())
 
+// ---------------------- DATABASE CONNECTION ----------------------
+mongoose.connect("mongodb://127.0.0.1:27017/sayotea_pos")
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.error("MongoDB connection error:", err))
 
-
-// ---------------------- ROUTES ----------------------
-
-// --- USERS LOGIN ---
+// ================= USERS LOGIN =================
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body
   try {
@@ -33,8 +34,6 @@ app.post("/api/login", async (req, res) => {
 })
 
 // ================= PRODUCTS =================
-
-// Get all products
 app.get("/api/products", async (req, res) => {
   try {
     const products = await Product.find()
@@ -44,7 +43,6 @@ app.get("/api/products", async (req, res) => {
   }
 })
 
-// Add product
 app.post("/api/products", async (req, res) => {
   try {
     const product = new Product(req.body)
@@ -55,7 +53,6 @@ app.post("/api/products", async (req, res) => {
   }
 })
 
-// Delete product
 app.delete("/api/products/:id", async (req, res) => {
   try {
     await Product.findByIdAndDelete(req.params.id)
@@ -65,7 +62,6 @@ app.delete("/api/products/:id", async (req, res) => {
   }
 })
 
-// Low stock products
 app.get("/api/products/lowstock", async (req, res) => {
   try {
     const products = await Product.find({ stock: { $lte: 10 } })
@@ -75,16 +71,17 @@ app.get("/api/products/lowstock", async (req, res) => {
   }
 })
 
-// Bestseller
 app.get("/api/products/bestseller", async (req, res) => {
   try {
     const orders = await Order.find()
     const productCount = {}
+
     orders.forEach(order => {
       order.products.forEach(p => {
         productCount[p.name] = (productCount[p.name] || 0) + p.quantity
       })
     })
+
     let best = { name: "N/A", quantity: 0 }
     for (const key in productCount) {
       if (productCount[key] > best.quantity) {
@@ -92,6 +89,7 @@ app.get("/api/products/bestseller", async (req, res) => {
         best.quantity = productCount[key]
       }
     }
+
     res.json(best)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -100,21 +98,26 @@ app.get("/api/products/bestseller", async (req, res) => {
 
 // ================= ORDERS =================
 
+// Get all orders
 app.get("/api/orders", async (req, res) => {
   try {
-    const orders = await Order.find()
+    const { status } = req.query
+    const filter = status ? { status } : {}
+    const orders = await Order.find(filter).sort({ date: -1 })
     res.json(orders)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+// Get today's orders
 app.get("/api/orders/today", async (req, res) => {
   try {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
+
     const orders = await Order.find({ date: { $gte: today, $lt: tomorrow } })
     res.json(orders)
   } catch (err) {
@@ -122,22 +125,107 @@ app.get("/api/orders/today", async (req, res) => {
   }
 })
 
-// ================= INVENTORY =================
-
-// Get all inventory logs
-app.get("/api/inventory", async (req, res) => {
+// Place new order
+app.post("/api/orders", async (req, res) => {
   try {
-    const inventory = await Inventory.find()
-    res.json(inventory)
+    const { customerName, customerAddress, products } = req.body
+
+    if (!products || products.length === 0)
+      return res.status(400).json({ error: "Order must have at least one product" })
+
+    let totalAmount = 0
+
+    // Check stock and calculate total
+    for (const item of products) {
+      const product = await Product.findById(item.productId)
+      if (!product) return res.status(404).json({ error: `Product ${item.name} not found` })
+      if (product.stock < item.quantity)
+        return res.status(400).json({ error: `Insufficient stock for ${item.name}` })
+
+      totalAmount += item.price * item.quantity
+
+      // Reduce stock
+      product.stock -= item.quantity
+      await product.save()
+
+      // Log inventory
+      const log = new Inventory({
+        productId: product._id,
+        productName: product.name,
+        stockOut: item.quantity,
+        remainingStock: product.stock,
+        date: new Date()
+      })
+      await log.save()
+    }
+
+    // Save order
+    const order = new Order({
+      customerName,
+      customerAddress,
+      products,
+      totalAmount,
+      status: "pending",
+      date: new Date()
+    })
+    await order.save()
+
+    res.json(order)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// Add stock / restock product
+// Update order status (complete/cancel)
+app.put("/api/orders/:id", async (req, res) => {
+  try {
+    const { status } = req.body
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ error: "Order not found" })
+
+    // If cancelling, restore stock
+    if (status === "canceled" && order.status !== "canceled") {
+      for (const item of order.products) {
+        const product = await Product.findById(item.productId)
+        if (product) {
+          product.stock += item.quantity
+          await product.save()
+          const log = new Inventory({
+            productId: product._id,
+            productName: product.name,
+            stockIn: item.quantity,
+            remainingStock: product.stock,
+            date: new Date()
+          })
+          await log.save()
+        }
+      }
+    }
+
+    order.status = status
+    await order.save()
+    res.json(order)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ================= INVENTORY =================
+app.get("/api/inventory", async (req, res) => {
+  try {
+    const logs = await Inventory.find().sort({ date: -1 })
+    res.json(logs)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 app.post("/api/inventory", async (req, res) => {
   try {
     const { productId, quantity } = req.body
+    if (!productId || !quantity || quantity <= 0)
+      return res.status(400).json({ error: "Invalid product or quantity" })
+
     const product = await Product.findById(productId)
     if (!product) return res.status(404).json({ error: "Product not found" })
 
@@ -147,11 +235,12 @@ app.post("/api/inventory", async (req, res) => {
     const log = new Inventory({
       productId,
       productName: product.name,
-      quantity,
+      stockIn: Number(quantity),
+      remainingStock: Number(product.stock),
       date: new Date()
     })
-    await log.save()
 
+    await log.save()
     res.json(log)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -159,7 +248,6 @@ app.post("/api/inventory", async (req, res) => {
 })
 
 // ================= SALES =================
-
 app.get("/api/sales", async (req, res) => {
   try {
     const sales = await Sales.find()

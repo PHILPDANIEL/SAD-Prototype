@@ -3,9 +3,10 @@ const mongoose = require("mongoose")
 const schema = new mongoose.Schema({
   orderId: Number,
   customerName: String,
+  customerAddress: String,   // NEW
   products: [
     {
-      productId: Number,
+      productId: mongoose.Schema.Types.ObjectId, // changed from Number
       name: String,
       quantity: Number,
       price: Number

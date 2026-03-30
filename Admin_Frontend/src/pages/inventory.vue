@@ -12,7 +12,6 @@
     </select>
 
     <input v-model.number="quantity" type="number" placeholder="Quantity to add">
-
     <button @click="restock">Add Stock</button>
 
     <h3>Inventory Logs</h3>
@@ -21,12 +20,14 @@
       <tr>
         <th>Product</th>
         <th>Quantity Added</th>
+        <th>Remaining Stock</th>
         <th>Date</th>
       </tr>
 
       <tr v-for="log in logs" :key="log._id">
         <td>{{ log.productName }}</td>
-        <td>{{ log.quantity }}</td>
+        <td>{{ log.stockIn }}</td>
+        <td>{{ log.remainingStock }}</td>
         <td>{{ formatDate(log.date) }}</td>
       </tr>
     </table>
@@ -72,8 +73,7 @@ export default {
     },
 
     formatDate(dateStr) {
-      const d = new Date(dateStr)
-      return d.toLocaleString()
+      return new Date(dateStr).toLocaleString()
     },
 
     async restock() {
@@ -83,28 +83,26 @@ export default {
       }
 
       try {
-        // Send restock request
         const res = await axios.post("http://localhost:5000/api/inventory", {
           productId: this.selectedProduct,
           quantity: this.quantity
         })
 
-        // Update product stock locally
+        // Update local product stock
         const product = this.products.find(p => p._id === this.selectedProduct)
         if (product) product.stock += this.quantity
 
-        // Add the new log entry to the table
-        this.logs.push({
+        // Add log entry
+        this.logs.unshift({
           _id: res.data._id,
           productName: product.name,
-          quantity: this.quantity,
+          stockIn: res.data.stockIn,
+          remainingStock: product.stock,
           date: res.data.date
         })
 
-        // Reset form
         this.selectedProduct = ""
         this.quantity = null
-
         alert("Stock updated successfully")
       } catch (err) {
         console.error("Error updating stock:", err)
@@ -116,34 +114,10 @@ export default {
 </script>
 
 <style>
-.page {
-  padding: 20px;
-}
-
-select, input {
-  margin-right: 10px;
-  margin-bottom: 10px;
-  padding: 5px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background: #f4f4f4;
-}
-
-button {
-  cursor: pointer;
-  padding: 5px 10px;
-}
+.page { padding: 20px; }
+select, input { margin-right: 10px; margin-bottom: 10px; padding: 5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #f4f4f4; }
+button { cursor: pointer; padding: 5px 10px; }
 </style>

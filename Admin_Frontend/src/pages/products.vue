@@ -11,24 +11,29 @@
 
     <h3>Product List</h3>
     <table>
-      <tr>
-        <th>Name</th>
-        <th>Category</th>
-        <th>Price</th>
-        <th>Stock</th>
-        <th>Action</th>
-      </tr>
-      <tr v-for="p in products" :key="p._id">
-        <td>{{ p.name || "No name" }}</td>
-        <td>{{ p.category || "-" }}</td>
-        <td>₱ {{ p.price != null ? p.price : "-" }}</td>
-        <td :class="{ low: p.stock != null && p.stock <= 10 }">
-          {{ p.stock != null ? p.stock : 0 }}
-        </td>
-        <td>
-          <button @click="deleteProduct(p._id)">Delete</button>
-        </td>
-      </tr>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr v-for="p in products" :key="p._id">
+          <td>{{ p.name || "No name" }}</td>
+          <td>{{ p.category || "-" }}</td>
+          <td>₱ {{ p.price != null ? p.price : "-" }}</td>
+          <td :class="{ low: p.stock != null && p.stock <= 10 }">
+            {{ p.stock != null ? p.stock : 0 }}
+          </td>
+          <td>
+            <button @click="deleteProduct(p._id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
     </table>
   </div>
 </template>
@@ -67,13 +72,15 @@ export default {
 
     async addProduct() {
       if (!this.newProduct.name || this.newProduct.price == null || this.newProduct.stock == null) {
-        alert("Please fill all fields")
+        alert("Please fill all required fields: Name, Price, Stock")
         return
       }
 
       try {
-        const res = await axios.post("http://localhost:5000/api/products", this.newProduct)
-        this.products.unshift(res.data) // add new product to top
+        // Make a shallow copy to avoid sending any unwanted properties
+        const productToSend = { ...this.newProduct }
+        const res = await axios.post("http://localhost:5000/api/products", productToSend)
+        this.products.unshift(res.data)
         this.newProduct = { name: "", category: "", price: null, stock: null }
       } catch (err) {
         console.error("Failed to add product:", err)
@@ -81,11 +88,11 @@ export default {
       }
     },
 
-    async deleteProduct(id) {
+    async deleteProduct(_id) {
       if (!confirm("Delete this product?")) return
       try {
-        await axios.delete(`http://localhost:5000/api/products/${id}`)
-        this.products = this.products.filter(p => p._id !== id)
+        await axios.delete(`http://localhost:5000/api/products/${_id}`)
+        this.products = this.products.filter(p => p._id !== _id)
       } catch (err) {
         console.error("Failed to delete product:", err)
         alert("Failed to delete product. Make sure backend is running and MongoDB is connected.")

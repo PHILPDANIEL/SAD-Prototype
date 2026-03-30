@@ -1,92 +1,128 @@
 <template>
-<div class="page">
-<h1>Orders</h1>
+  <div class="orders-page p-4">
+    <h1 class="text-2xl font-bold mb-4">Orders</h1>
 
-<h3>Create Order</h3>
+    <!-- Filters -->
+    <div class="flex gap-4 mb-4">
+      <button @click="fetchOrders()" class="btn">All</button>
+      <button @click="fetchOrders('today')" class="btn">Today</button>
+      <button @click="fetchOrders('pending')" class="btn">Pending</button>
+      <button @click="fetchOrders('completed')" class="btn">Completed</button>
+      <button @click="fetchOrders('canceled')" class="btn">Canceled</button>
+    </div>
 
-<input v-model="newOrder.order_number" placeholder="Order Number">
-<input v-model="newOrder.total_amount" placeholder="Total Amount">
-<input v-model="newOrder.payment_method" placeholder="Payment Method">
+    <!-- Orders Table -->
+    <table class="w-full border border-gray-300">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border px-2 py-1">Order ID</th>
+          <th class="border px-2 py-1">Customer</th>
+          <th class="border px-2 py-1">Total</th>
+          <th class="border px-2 py-1">Status</th>
+          <th class="border px-2 py-1">Date</th>
+          <th class="border px-2 py-1">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="order in orders" :key="order._id" class="hover:bg-gray-50">
+          <td class="border px-2 py-1">{{ order._id }}</td>
+          <td class="border px-2 py-1">{{ order.customerName }}</td>
+          <td class="border px-2 py-1">₱{{ order.totalAmount }}</td>
+          <td class="border px-2 py-1 capitalize">{{ order.status }}</td>
+          <td class="border px-2 py-1">{{ formatDate(order.date) }}</td>
+          <td class="border px-2 py-1 flex gap-1">
+            <button @click="viewOrder(order)" class="btn btn-sm">View</button>
+            <button v-if="order.status !== 'completed'" @click="updateStatus(order, 'completed')" class="btn btn-sm btn-green">Complete</button>
+            <button v-if="order.status !== 'canceled'" @click="updateStatus(order, 'canceled')" class="btn btn-sm btn-red">Cancel</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-<button @click="addOrder">Add Order</button>
-
-<h3>Orders List</h3>
-
-<table>
-<tr>
-<th>Order #</th>
-<th>Total</th>
-<th>Payment</th>
-<th>Action</th>
-</tr>
-
-<tr v-for="o in orders" :key="o._id">
-<td>{{ o.order_number }}</td>
-<td>{{ o.total_amount }}</td>
-<td>{{ o.payment_method }}</td>
-
-<td>
-<button @click="deleteOrder(o._id)">Delete</button>
-</td>
-
-</tr>
-</table>
-
-</div>
+    <!-- Order Details Modal -->
+    <div v-if="selectedOrder" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+      <div class="bg-white p-4 w-1/2 rounded shadow">
+        <h2 class="text-xl font-bold mb-2">Order Details</h2>
+        <p><strong>Customer:</strong> {{ selectedOrder.customerName }}</p>
+        <p><strong>Address:</strong> {{ selectedOrder.customerAddress || 'N/A' }}</p>
+        <p><strong>Status:</strong> {{ selectedOrder.status }}</p>
+        <p><strong>Date:</strong> {{ formatDate(selectedOrder.date) }}</p>
+        <p><strong>Products:</strong></p>
+        <ul class="list-disc ml-6 mb-2">
+          <li v-for="item in selectedOrder.products" :key="item.productId">
+            {{ item.name }} - {{ item.quantity }} x ₱{{ item.price }}
+          </li>
+        </ul>
+        <p><strong>Total:</strong> ₱{{ selectedOrder.totalAmount }}</p>
+        <div class="mt-4 flex justify-end gap-2">
+          <button @click="selectedOrder = null" class="btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
 import axios from "axios"
 
 export default {
-data(){
-return{
-orders:[],
-newOrder:{
-order_number:"",
-total_amount:0,
-payment_method:""
-}
-}
-},
+  name: "OrdersPage",
+  data() {
+    return {
+      orders: [],
+      selectedOrder: null
+    }
+  },
+  mounted() {
+    this.fetchOrders()
+  },
+  methods: {
+    async fetchOrders(filter = null) {
+      try {
+        let url = "/api/orders"
+        if (filter === "today") url = "/api/orders/today"
+        else if (["pending", "completed", "canceled"].includes(filter)) url = `/api/orders?status=${filter}`
 
-async mounted(){
-const res = await axios.get("/api/orders")
-this.orders = res.data
-},
-
-methods:{
-async addOrder(){
-const res = await axios.post("/api/orders", this.newOrder)
-this.orders.push(res.data)
-
-this.newOrder = {
-order_number:"",
-total_amount:0,
-payment_method:""
-}
-},
-
-async deleteOrder(id){
-await axios.delete(`/api/orders/${id}`)
-this.orders = this.orders.filter(o => o._id !== id)
-}
-}
+        const res = await axios.get(url)
+        this.orders = res.data
+      } catch (err) {
+        console.error(err)
+        alert("Failed to fetch orders")
+      }
+    },
+    formatDate(dateStr) {
+      const d = new Date(dateStr)
+      return d.toLocaleString()
+    },
+    viewOrder(order) {
+      this.selectedOrder = order
+    },
+    async updateStatus(order, status) {
+      try {
+        const res = await axios.put(`/api/orders/${order._id}`, { status })
+        alert(`Order status updated to ${res.data.status}`)
+        this.fetchOrders()
+      } catch (err) {
+        console.error(err)
+        alert("Failed to update status")
+      }
+    }
+  }
 }
 </script>
 
-<style>
-table{
-width:100%;
-border-collapse: collapse;
+<style scoped>
+.btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  cursor: pointer;
 }
-
-th, td{
-border:1px solid #ddd;
-padding:8px;
-}
-
-th{
-background:#f4f4f4;
-}
+.btn:hover { background-color: #e0e0e0; }
+.btn-green { background-color: #4caf50; color: white; }
+.btn-green:hover { background-color: #45a049; }
+.btn-red { background-color: #f44336; color: white; }
+.btn-red:hover { background-color: #e53935; }
+.btn-sm { font-size: 0.8rem; padding: 2px 6px; }
 </style>

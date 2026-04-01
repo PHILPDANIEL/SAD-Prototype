@@ -1,61 +1,107 @@
 const express = require("express");
 const router = express.Router();
-const Order = require("../models/Order");
-const Product = require("../models/Product");
 
-// Get orders for a specific user, optional filter by status
-router.get("/user/:id", async (req, res) => {
+const Order = require("../models/order");
+const Product = require("../models/product");
+const Sales = require("../models/sales");
+const authMiddleware = require("../middleware/authMiddleware");
+
+
+// Dashboard stats
+router.get("/dashboard", authMiddleware, async (req, res) => {
   try {
-    const status = req.query.status; // pending/completed/canceled
-    const filter = { userId: req.params.id };
-    if (status) filter.status = status;
+    const total = await Order.countDocuments({ userId: req.user.id });
+    const pending = await Order.countDocuments({
+      userId: req.user.id,
+      status: "pending"
+    });
+    const completed = await Order.countDocuments({
+      userId: req.user.id,
+      status: "completed"
+    });
 
-    const orders = await Order.find(filter).sort({ date: -1 });
-    res.json(orders);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.json({ total, pending, completed });
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// Place order
-router.post("/", async (req, res) => {
+
+// Get user orders
+router.get("/my-orders", authMiddleware, async (req, res) => {
   try {
-    const { userId, customerName, products, deliveryInfo } = req.body;
-    if (!products || products.length === 0) return res.status(400).json({ error: "No products in order" });
+    const orders = await Order.find({
+      userId: req.user.id
+    }).sort({ createdAt: -1 });
 
-    let totalAmount = 0;
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to load orders" });
+  }
+});
 
-    // Check stock and deduct
-    for (const item of products) {
-      const product = await Product.findById(item.productId);
-      if (!product) return res.status(404).json({ error: `${item.name} not found` });
-      if (product.stock < item.quantity) return res.status(400).json({ error: `Insufficient stock for ${item.name}` });
 
-      totalAmount += item.price * item.quantity;
-      product.stock -= item.quantity;
-      await product.save();
+// Create order (checkout)
+router.post("/create", authMiddleware, async (req, res) => {
+  const { items, total } = req.body;
+
+  try {
+
+    // Check stock
+    for (let item of items) {
+      const product = await Product.findById(item._id);
+
+      if (!product) {
+        return res.status(404).json({
+          message: "Product not found"
+        });
+      }
+
+      if (product.stock < item.qty) {
+        return res.status(400).json({
+          message: `${product.name} out of stock`
+        });
+      }
     }
 
-    const order = new Order({ userId, customerName, products, totalAmount, status: "pending", deliveryInfo });
-    await order.save();
-    res.json(order);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    // Create order
+    const order = new Order({
+      userId: req.user.id,
+      items,
+      total
+    });
 
-// Update order status (cancel or complete)
-router.put("/:id", async (req, res) => {
-  try {
-    const { status } = req.body;
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: "Order not found" });
-
-    order.status = status;
     await order.save();
-    res.json(order);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    // Deduct stock + record sales
+    for (let item of items) {
+      const product = await Product.findById(item._id);
+
+      product.stock -= item.qty;
+      await product.save();
+
+      const sale = new Sales({
+        orderId: order._id,
+        productId: product._id,
+        name: product.name,
+        qty: item.qty,
+        price: product.price,
+        total: item.qty * product.price
+      });
+
+      await sale.save();
+    }
+
+    res.json({
+      message: "Order placed successfully"
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Order failed"
+    });
   }
 });
 

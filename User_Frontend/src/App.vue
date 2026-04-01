@@ -1,18 +1,30 @@
 <template>
-  <div id="app" class="app-container">
+  <div class="layout">
     <Sidebar />
-    <router-view />
+    <div class="content">
+      <router-view />
+    </div>
   </div>
 </template>
 
 <script>
-import Sidebar from './components/Sidebar.vue';
-export default { components: { Sidebar } };
+import Sidebar from "./components/Sidebar.vue";
+
+export default {
+  components: {
+    Sidebar
+  }
+};
 </script>
 
 <style>
-.app-container {
+.layout {
   display: flex;
+}
+
+.content {
+  flex: 1;
+  background: #f5f6fa;
   min-height: 100vh;
 }
 </style>

@@ -1,23 +1,27 @@
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  customerName: String,
-  products: [
+  userId: String,
+
+  items: [
     {
-      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+      productId: String,
       name: String,
-      quantity: Number,
+      qty: Number,
       price: Number
     }
   ],
-  totalAmount: Number,
-  status: { type: String, enum: ["pending", "completed", "canceled"], default: "pending" },
-  deliveryInfo: {
-    label: String,
-    details: String
+
+  total: Number,
+  status: {
+    type: String,
+    default: "pending"
   },
-  date: { type: Date, default: Date.now }
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
 module.exports = mongoose.model("Order", orderSchema);

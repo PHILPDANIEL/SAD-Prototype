@@ -1,34 +1,39 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User");
 
-// Get user profile
-router.get("/:id", async (req, res) => {
+const User = require("../models/user");
+const authMiddleware = require("../middleware/authMiddleware");
+
+
+// Get logged-in user
+router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const user = await User.findById(req.user.id);
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// Update user profile
-router.put("/:id", async (req, res) => {
+
+// Update profile
+router.put("/update", authMiddleware, async (req, res) => {
   try {
-    const { username, profilePic, addresses, acceptsPrivacy } = req.body;
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const { username, email, profilePicture } = req.body;
 
-    if (username !== undefined) user.username = username;
-    if (profilePic !== undefined) user.profilePic = profilePic;
-    if (addresses !== undefined) user.addresses = addresses;
-    if (acceptsPrivacy !== undefined) user.acceptsPrivacy = acceptsPrivacy;
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        username,
+        email,
+        profilePicture
+      },
+      { new: true }
+    );
 
-    await user.save();
-    res.json(user);
+    res.json(updatedUser);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Update failed" });
   }
 });
 

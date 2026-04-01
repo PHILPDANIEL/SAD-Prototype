@@ -1,52 +1,77 @@
 <template>
-  <div class="product-card">
-    <h3>{{ product.name }}</h3>
-    <p>Price: ₱{{ product.price }}</p>
-    <p>Stock: {{ product.stock }}</p>
-    <input type="number" v-model.number="quantity" min="1" :max="product.stock" />
-    <button @click="addToCart">Add to Cart</button>
+  <div class="card">
+
+    <img
+      v-if="product.image"
+      :src="product.image"
+      class="product-img"
+    />
+
+    <div class="card-body">
+      <h3>{{ product.name }}</h3>
+      <p class="category">{{ product.category }}</p>
+      <p class="price">₱ {{ product.price }}</p>
+
+      <button @click="addToCart">
+        Add to Order
+      </button>
+    </div>
+
   </div>
 </template>
 
 <script>
 export default {
   name: "ProductCard",
-  props: {
-    product: Object,
-    cart: Array
-  },
-  data() {
-    return {
-      quantity: 1
-    };
-  },
+  props: ["product"],
+
   methods: {
     addToCart() {
-      if (this.quantity > 0 && this.quantity <= this.product.stock) {
-        const existing = this.cart.find(item => item.productId === this.product._id);
-        if (existing) existing.quantity += this.quantity;
-        else this.cart.push({ ...this.product, productId: this.product._id, quantity: this.quantity });
-        this.quantity = 1;
-        alert("Added to cart");
-      }
+      this.$emit("add-to-cart", this.product);
     }
   }
 };
 </script>
 
 <style scoped>
-.product-card {
-  border: 1px solid #ccc;
+.card {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.product-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.card-body {
+  padding: 15px;
+}
+
+.category {
+  color: gray;
+  font-size: 13px;
+}
+
+.price {
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+button {
+  width: 100%;
   padding: 10px;
-  margin: 10px;
-  border-radius: 8px;
-  width: 200px;
+  border: none;
+  background: #6c5ce7;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
 }
-.product-card h3 {
-  margin: 0 0 5px 0;
-}
-.product-card input {
-  width: 60px;
-  margin-right: 5px;
+
+button:hover {
+  background: #5a4bd8;
 }
 </style>

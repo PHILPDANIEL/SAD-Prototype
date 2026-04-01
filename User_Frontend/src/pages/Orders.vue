@@ -1,29 +1,58 @@
 <template>
-  <div class="orders">
-    <h1>Orders</h1>
+  <div class="orders-page">
 
-    <div class="filters">
-      <button @click="filterStatus('all')">All</button>
-      <button @click="filterStatus('pending')">Pending</button>
-      <button @click="filterStatus('completed')">Completed</button>
-      <button @click="filterStatus('canceled')">Canceled</button>
+    <h1 class="title">My Orders</h1>
+    <p class="subtitle">Track your orders</p>
+
+    <div v-if="loading" class="loading">
+      Loading orders...
     </div>
 
-    <div class="orders-list">
-      <div v-for="order in filteredOrders" :key="order._id" class="order-card">
-        <h3>Order #{{ order._id }}</h3>
-        <p>Status: {{ order.status }}</p>
-        <p>Total: {{ order.totalAmount }} PHP</p>
-        <p>Address: {{ order.deliveryInfo?.address }}</p>
-        <p>Contact: {{ order.deliveryInfo?.contact }}</p>
-        <div>
-          <strong>Products:</strong>
-          <ul>
-            <li v-for="p in order.products" :key="p.productId">{{ p.name }} x {{ p.quantity }}</li>
-          </ul>
-        </div>
+    <div v-else>
+
+      <div v-if="orders.length === 0" class="empty">
+        No orders yet.
       </div>
+
+      <div v-for="order in orders" :key="order._id" class="order-card">
+
+        <div class="order-header">
+          <div>
+            <strong>Order ID:</strong> {{ order._id }}
+          </div>
+
+          <div
+            class="status"
+            :class="order.status"
+          >
+            {{ order.status }}
+          </div>
+        </div>
+
+        <div class="order-items">
+          <div
+            v-for="item in order.items"
+            :key="item.productId"
+            class="item"
+          >
+            {{ item.name }} × {{ item.qty }}
+          </div>
+        </div>
+
+        <div class="order-footer">
+          <div class="total">
+            Total: ₱ {{ order.total }}
+          </div>
+
+          <div class="date">
+            {{ formatDate(order.createdAt) }}
+          </div>
+        </div>
+
+      </div>
+
     </div>
+
   </div>
 </template>
 
@@ -31,55 +60,111 @@
 import axios from "axios";
 
 export default {
-  name: "Orders",
+  name: "OrdersPage",
   data() {
     return {
       orders: [],
-      filteredOrders: [],
-      user: JSON.parse(localStorage.getItem("user")) || {}
+      loading: true
     };
   },
+
   async mounted() {
-    await this.fetchOrders();
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await axios.get(
+        "http://localhost:5001/api/order/my-orders",
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      this.orders = res.data;
+      this.loading = false;
+
+    } catch (error) {
+      console.error("Failed to load orders:", error);
+    }
   },
+
   methods: {
-    async fetchOrders() {
-      const res = await axios.get("http://localhost:5001/api/orders");
-      this.orders = res.data.filter(o => o.userId === this.user._id);
-      this.filteredOrders = this.orders;
-    },
-    filterStatus(status) {
-      if (status === "all") this.filteredOrders = this.orders;
-      else this.filteredOrders = this.orders.filter(o => o.status === status);
+    formatDate(date) {
+      return new Date(date).toLocaleString();
     }
   }
 };
 </script>
 
 <style scoped>
-.orders {
-  padding: 2rem;
+.orders-page {
+  padding: 25px;
 }
-.filters {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
+
+.title {
+  font-size: 28px;
 }
-.filters button {
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background: #f4f4f4;
+
+.subtitle {
+  color: gray;
+  margin-bottom: 20px;
 }
-.orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+
+.loading {
+  font-size: 18px;
 }
-.order-card {
-  border: 1px solid #ccc;
-  padding: 1rem;
+
+.empty {
+  background: #f5f5f5;
+  padding: 20px;
   border-radius: 8px;
+}
+
+.order-card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.status {
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: capitalize;
+}
+
+.status.pending {
+  background: #ffeaa7;
+}
+
+.status.completed {
+  background: #55efc4;
+}
+
+.order-items {
+  margin-bottom: 10px;
+}
+
+.item {
+  font-size: 14px;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.total {
+  font-weight: bold;
+}
+
+.date {
+  color: gray;
 }
 </style>

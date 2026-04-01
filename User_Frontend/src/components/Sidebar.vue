@@ -1,30 +1,37 @@
 <template>
   <div class="sidebar">
-    <h2>User Dashboard</h2>
-    <ul>
-      <li><router-link to="/home">Home</router-link></li>
-      <li><router-link to="/store">Store</router-link></li>
-      <li><router-link to="/orders">Orders</router-link></li>
-      <li><router-link to="/profile">Profile</router-link></li>
-      <li @click="logout">Logout</li>
-    </ul>
+    <h2 class="logo">Sayotea</h2>
+
+    <router-link to="/">Dashboard</router-link>
+    <router-link to="/store">Store</router-link>
+    <router-link to="/orders">Orders</router-link>
+    <router-link to="/profile">Profile</router-link>
+    <router-link to="/logout">Logout</router-link>
   </div>
 </template>
 
-<script>
-export default {
-  methods: {
-    logout() {
-      localStorage.removeItem("user");
-      this.$router.push("/home");
-    },
-  },
-};
-</script>
+<style scoped>
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background: #6c5ce7;
+  padding: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
 
-<style>
-/* Basic styling, customize later */
-.sidebar { width: 200px; padding: 20px; background: #f1f1f1; }
-.sidebar ul { list-style: none; padding: 0; }
-.sidebar li { margin: 15px 0; cursor: pointer; }
+.logo {
+  margin-bottom: 30px;
+}
+
+a {
+  color: white;
+  text-decoration: none;
+  margin: 10px 0;
+}
+
+a.router-link-active {
+  font-weight: bold;
+}
 </style>

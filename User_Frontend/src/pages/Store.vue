@@ -1,100 +1,111 @@
 <template>
-  <div class="main">
-    <h1>Store</h1>
+  <div class="store">
 
-    <div class="store-container">
-      <div class="product-grid">
-        <ProductCard
-          v-for="product in products"
-          :key="product._id"
-          :product="product"
-          @add-to-cart="addToCart"
-        />
-      </div>
+    <h1 class="page-title">Store</h1>
+    <p class="subtitle">Choose your favorite drinks</p>
 
-      <div class="cart-summary card">
-        <h2>Order Summary</h2>
-        <OrderSummary
-          :cart="cart"
-          @remove-item="removeFromCart"
-          @place-order="placeOrder"
-        />
-      </div>
+    <!-- Loading -->
+    <div v-if="loading" class="loading">
+      Loading products...
     </div>
+
+    <!-- Product Grid -->
+    <div v-else class="product-grid">
+      <ProductCard
+        v-for="product in products"
+        :key="product._id"
+        :product="product"
+        @add-to-cart="addToCart"
+      />
+    </div>
+
+    <!-- Floating Checkout Button -->
+    <router-link to="/checkout" class="checkout-btn">
+      Go to Checkout
+    </router-link>
+
   </div>
 </template>
 
 <script>
-import ProductCard from "../components/ProductCard.vue";
-import OrderSummary from "../components/OrderSummary.vue";
 import axios from "axios";
+import ProductCard from "../components/ProductCard.vue";
 
 export default {
-  components: { ProductCard, OrderSummary },
+  name: "StorePage",
+  components: { ProductCard },
   data() {
     return {
       products: [],
-      cart: []
+      loading: true
     };
   },
-  mounted() {
-    axios.get("http://localhost:5001/api/products")
-      .then(res => this.products = res.data)
-      .catch(err => console.error(err));
+  async mounted() {
+    try {
+      const res = await axios.get("http://localhost:5001/api/product");
+      this.products = res.data;
+      this.loading = false;
+    } catch (error) {
+      console.error("Failed to load products:", error);
+    }
   },
   methods: {
     addToCart(product) {
-      const existing = this.cart.find(p => p._id === product._id);
-      if (existing) existing.quantity++;
-      else this.cart.push({ ...product, quantity: 1 });
-    },
-    removeFromCart(id) {
-      this.cart = this.cart.filter(p => p._id !== id);
-    },
-    placeOrder() {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (!user || !user.addresses || user.addresses.length === 0) {
-        alert("Please add your delivery address in Profile first.");
-        this.$router.push('/profile');
-        return;
-      }
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const existing = cart.find(item => item._id === product._id);
 
-      const order = {
-        customerName: user.username,
-        products: this.cart.map(p => ({
-          productId: p._id,
-          name: p.name,
-          price: p.price,
-          quantity: p.quantity
-        }))
-      };
+      if (existing) existing.qty++;
+      else cart.push({ ...product, qty: 1 });
 
-      axios.post("http://localhost:5001/api/orders", order)
-        .then(res => {
-          alert("Order placed successfully! Your receipt will appear.");
-          this.cart = [];
-        })
-        .catch(err => console.error(err));
+      localStorage.setItem("cart", JSON.stringify(cart));
+      alert("Added to cart!");
     }
   }
 };
 </script>
 
 <style scoped>
-.store-container {
-  display: flex;
-  gap: 20px;
+.store {
+  padding: 25px;
+}
+
+.page-title {
+  font-size: 28px;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  color: gray;
+  margin-bottom: 20px;
 }
 
 .product-grid {
-  flex: 3;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
 }
 
-.cart-summary {
-  flex: 1;
-  min-width: 250px;
+.loading {
+  font-size: 18px;
+}
+
+/* Floating Checkout Button */
+.checkout-btn {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  display: inline-block;
+  padding: 12px 20px;
+  background: #00b894;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: background 0.2s;
+}
+
+.checkout-btn:hover {
+  background: #019775;
 }
 </style>

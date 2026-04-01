@@ -1,0 +1,82 @@
+/* ---------- VARIABLES ---------- */
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
+            rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+
+/* ---------- GLOBAL RESET ---------- */
+body {
+  font-family: var(--sans);
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1, h2, h3 {
+  font-family: var(--heading);
+  color: var(--text-h);
+  margin: 0 0 12px 0;
+}
+
+p {
+  margin: 0;
+}
+
+/* ---------- LAYOUT ---------- */
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+/* ---------- BUTTONS ---------- */
+button {
+  cursor: pointer;
+  font-family: var(--sans);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+/* ---------- CARD ---------- */
+.card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--bg);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}

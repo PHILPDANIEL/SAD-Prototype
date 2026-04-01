@@ -1,26 +1,26 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 
 const authRoutes = require("./routes/auth");
-const userRoutes = require("./routes/user");
 const productRoutes = require("./routes/product");
+const userRoutes = require("./routes/user");
 const orderRoutes = require("./routes/order");
 
 const app = express();
+
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-mongoose.connect("mongodb://127.0.0.1:27017/user_pos")
+mongoose.connect("mongodb://127.0.0.1:27017/sayotea_pos")
   .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("MongoDB connection error:", err));
+  .catch(err => console.log(err));
 
-// Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
+app.use("/api/product", productRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/order", orderRoutes);
 
-const PORT = 5001; // different from Admin_Backend
-app.listen(PORT, () => console.log(`User_Backend running on port ${PORT}`));
+app.listen(5001, () => {
+  console.log("Server running on port 5001");
+});

@@ -19,9 +19,12 @@
       />
     </div>
 
-    <!-- Floating Checkout Button -->
-    <router-link to="/checkout" class="checkout-btn">
-      Go to Checkout
+    <!-- Floating Cart Button -->
+    <router-link to="/checkout" class="cart-btn">
+      🛒
+      <span v-if="cartCount > 0" class="cart-badge">
+        {{ cartCount }}
+      </span>
     </router-link>
 
   </div>
@@ -34,13 +37,18 @@ import ProductCard from "../components/ProductCard.vue";
 export default {
   name: "StorePage",
   components: { ProductCard },
+
   data() {
     return {
       products: [],
-      loading: true
+      loading: true,
+      cartCount: 0
     };
   },
+
   async mounted() {
+    this.loadCartCount();
+
     try {
       const res = await axios.get("http://localhost:5001/api/product");
       this.products = res.data;
@@ -49,16 +57,31 @@ export default {
       console.error("Failed to load products:", error);
     }
   },
+
   methods: {
     addToCart(product) {
       let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
       const existing = cart.find(item => item._id === product._id);
 
-      if (existing) existing.qty++;
-      else cart.push({ ...product, qty: 1 });
+      if (existing) {
+        existing.qty++;
+      } else {
+        cart.push({
+          ...product,
+          qty: 1
+        });
+      }
 
       localStorage.setItem("cart", JSON.stringify(cart));
+
+      this.loadCartCount(); // update badge
       alert("Added to cart!");
+    },
+
+    loadCartCount() {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      this.cartCount = cart.reduce((total, item) => total + item.qty, 0);
     }
   }
 };
@@ -89,23 +112,29 @@ export default {
   font-size: 18px;
 }
 
-/* Floating Checkout Button */
-.checkout-btn {
+/* Floating Cart Button */
+.cart-btn {
   position: fixed;
   bottom: 25px;
   right: 25px;
-  display: inline-block;
-  padding: 12px 20px;
-  background: #00b894;
+  background: #6c5ce7;
   color: white;
-  border-radius: 8px;
+  font-size: 24px;
+  padding: 15px;
+  border-radius: 50%;
   text-decoration: none;
-  font-weight: bold;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  transition: background 0.2s;
 }
 
-.checkout-btn:hover {
-  background: #019775;
+/* Cart Badge */
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  padding: 4px 7px;
+  border-radius: 50%;
 }
 </style>

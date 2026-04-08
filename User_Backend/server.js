@@ -7,6 +7,8 @@ const productRoutes = require("./routes/product");
 const userRoutes = require("./routes/user");
 const orderRoutes = require("./routes/order");
 
+const addonRoutes = require("./routes/addons");
+
 const app = express();
 
 app.use(cors());
@@ -20,6 +22,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/order", orderRoutes);
+
+app.use("/api/addons", addonRoutes);
 
 app.listen(5001, () => {
   console.log("Server running on port 5001");

@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Super Admin Panel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #111318;
+    --bg3: #1a1d24;
+    --bg4: #22262f;
+    --border: #2a2e38;
+    --border2: #363b48;
+    --text: #e8eaf0;
+    --text2: #8b909e;
+    --text3: #555a68;
+    --accent: #6c63ff;
+    --accent2: #8b85ff;
+    --accent-bg: rgba(108,99,255,0.12);
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.1);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245,158,11,0.1);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.1);
+    --cyan: #06b6d4;
+    --sidebar-w: 240px;
+    --header-h: 60px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--font); font-size:14px; overflow-x:hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    position:fixed; left:0; top:0; bottom:0; width:var(--sidebar-w);
+    background:var(--bg2); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; z-index:100; overflow-y:auto;
+  }
+  .sidebar-logo {
+    padding:20px 20px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:10px;
+  }
+  .logo-icon {
+    width:34px; height:34px; background:var(--accent); border-radius:8px;
+    display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#fff; flex-shrink:0;
+  }
+  .logo-text { font-size:15px; font-weight:600; color:var(--text); }
+  .logo-sub { font-size:11px; color:var(--text3); margin-top:1px; }
+  .sidebar-nav { padding:12px 0; flex:1; }
+  .nav-section { padding:8px 16px 4px; font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:9px 16px;
+    cursor:pointer; border-radius:0; transition:background .15s, color .15s;
+    color:var(--text2); font-size:13.5px; position:relative;
+  }
+  .nav-item:hover { background:var(--bg3); color:var(--text); }
+  .nav-item.active { background:var(--accent-bg); color:var(--accent2); }
+  .nav-item.active::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); border-radius:0 3px 3px 0; }
+  .nav-icon { font-size:16px; width:20px; text-align:center; flex-shrink:0; }
+  .nav-badge {
+    margin-left:auto; background:var(--red); color:#fff; font-size:10px;
+    padding:1px 6px; border-radius:10px; font-weight:600;
+  }
+  .nav-badge.green { background:var(--green); }
+  .sidebar-footer { padding:14px 16px; border-top:1px solid var(--border); }
+  .admin-card { display:flex; align-items:center; gap:10px; }
+  .admin-av {
+    width:34px; height:34px; border-radius:50%; background:var(--accent);
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#fff; flex-shrink:0;
+  }
+  .admin-name { font-size:13px; font-weight:500; }
+  .admin-role { font-size:11px; color:var(--text3); }
+  .admin-actions { margin-left:auto; display:flex; gap:6px; }
+  .icon-btn { background:none; border:none; cursor:pointer; color:var(--text2); font-size:14px; padding:4px; border-radius:4px; transition:color .15s, background .15s; }
+  .icon-btn:hover { color:var(--text); background:var(--bg3); }
+
+  /* MAIN */
+  .main { margin-left:var(--sidebar-w); min-height:100vh; display:flex; flex-direction:column; }
+  .header {
+    position:sticky; top:0; height:var(--header-h);
+    background:var(--bg2); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 24px; gap:16px; z-index:50;
+  }
+  .header-title { font-size:16px; font-weight:600; flex:1; }
+  .header-search {
+    display:flex; align-items:center; gap:8px; background:var(--bg3); border:1px solid var(--border);
+    border-radius:var(--radius-sm); padding:6px 12px; width:240px;
+  }
+  .header-search input { background:none; border:none; outline:none; color:var(--text); font-size:13px; width:100%; }
+  .header-search input::placeholder { color:var(--text3); }
+  .notif-btn { position:relative; }
+  .notif-dot { position:absolute; top:0; right:0; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg2); }
+  .avatar-btn {
+    width:34px; height:34px; border-radius:50%; background:var(--accent);
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#fff; cursor:pointer; flex-shrink:0;
+  }
+
+  /* CONTENT */
+  .content { padding:24px; flex:1; }
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* CARDS */
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px;
+    display:flex; flex-direction:column; gap:4px; cursor:pointer; transition:border-color .2s, transform .15s;
+  }
+  .stat-card:hover { border-color:var(--border2); transform:translateY(-1px); }
+  .stat-label { font-size:12px; color:var(--text2); text-transform:uppercase; letter-spacing:.05em; }
+  .stat-val { font-size:26px; font-weight:700; line-height:1; }
+  .stat-sub { font-size:12px; display:flex; align-items:center; gap:4px; }
+  .stat-up { color:var(--green); }
+  .stat-down { color:var(--red); }
+  .stat-icon { font-size:20px; margin-bottom:4px; }
+
+  /* CHARTS ROW */
+  .charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:24px; }
+  .chart-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+  .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card-title { font-size:14px; font-weight:600; }
+  .card-actions { display:flex; gap:6px; }
+  .tab-btn {
+    background:none; border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:4px 10px; font-size:12px; color:var(--text2); cursor:pointer; transition:all .15s;
+  }
+  .tab-btn.active, .tab-btn:hover { background:var(--accent-bg); color:var(--accent2); border-color:var(--accent); }
+  canvas { max-width:100%; }
+
+  /* TABLE */
+  .table-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:24px; }
+  table { width:100%; border-collapse:collapse; }
+  thead tr { background:var(--bg3); border-bottom:1px solid var(--border); }
+  th { padding:11px 16px; text-align:left; font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; }
+  td { padding:12px 16px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--bg3); }
+  .badge {
+    display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:500;
+  }
+  .badge.green { background:var(--green-bg); color:var(--green); }
+  .badge.red { background:var(--red-bg); color:var(--red); }
+  .badge.amber { background:var(--amber-bg); color:var(--amber); }
+  .badge.blue { background:var(--blue-bg); color:var(--blue); }
+  .badge.accent { background:var(--accent-bg); color:var(--accent2); }
+  .badge.gray { background:var(--bg4); color:var(--text2); }
+  .action-btns { display:flex; gap:6px; }
+  .btn {
+    display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:var(--radius-sm);
+    font-size:13px; font-weight:500; cursor:pointer; border:none; transition:all .15s;
+  }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:var(--accent2); }
+  .btn-outline { background:none; border:1px solid var(--border2); color:var(--text); }
+  .btn-outline:hover { background:var(--bg3); border-color:var(--border2); }
+  .btn-danger { background:var(--red-bg); color:var(--red); border:1px solid var(--red-bg); }
+  .btn-danger:hover { background:rgba(239,68,68,0.2); }
+  .btn-sm { padding:4px 10px; font-size:12px; }
+  .btn-success { background:var(--green-bg); color:var(--green); border:1px solid var(--green-bg); }
+
+  /* SEARCH/FILTER ROW */
+  .filter-row { display:flex; gap:10px; align-items:center; padding:16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .filter-input {
+    background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:7px 12px; color:var(--text); font-size:13px; outline:none; width:220px;
+  }
+  .filter-input:focus { border-color:var(--accent); }
+  select.filter-input { cursor:pointer; appearance:none; }
+
+  /* USER DETAIL PANEL */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+  .form-group { margin-bottom:16px; }
+  .form-label { font-size:12px; color:var(--text2); margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:.04em; }
+  .form-input {
+    width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:9px 12px; color:var(--text); font-size:13px; outline:none;
+  }
+  .form-input:focus { border-color:var(--accent); }
+  .toggle { display:flex; align-items:center; gap:10px; }
+  .toggle-switch {
+    width:40px; height:22px; background:var(--border2); border-radius:11px; position:relative; cursor:pointer; transition:background .2s;
+  }
+  .toggle-switch.on { background:var(--accent); }
+  .toggle-switch::after {
+    content:''; position:absolute; top:3px; left:3px; width:16px; height:16px;
+    background:#fff; border-radius:50%; transition:transform .2s;
+  }
+  .toggle-switch.on::after { transform:translateX(18px); }
+
+  /* LOG ITEM */
+  .log-item {
+    display:flex; align-items:flex-start; gap:12px; padding:12px 16px;
+    border-bottom:1px solid var(--border); cursor:pointer;
+  }
+  .log-item:hover { background:var(--bg3); }
+  .log-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+  .log-dot.green { background:var(--green); }
+  .log-dot.red { background:var(--red); }
+  .log-dot.amber { background:var(--amber); }
+  .log-dot.blue { background:var(--blue); }
+  .log-content { flex:1; }
+  .log-msg { font-size:13px; }
+  .log-meta { font-size:11px; color:var(--text3); margin-top:2px; }
+  .log-time { font-size:11px; color:var(--text3); white-space:nowrap; }
+
+  /* PROGRESS */
+  .progress-bar { background:var(--bg3); border-radius:4px; height:6px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:4px; background:var(--accent); transition:width .4s; }
+  .progress-fill.green { background:var(--green); }
+  .progress-fill.amber { background:var(--amber); }
+  .progress-fill.red { background:var(--red); }
+
+  /* PERMISSION MATRIX */
+  .perm-grid { display:grid; grid-template-columns:180px repeat(5,1fr); gap:0; }
+  .perm-header { background:var(--bg3); padding:10px 12px; font-size:11px; color:var(--text3); font-weight:600; text-transform:uppercase; border-bottom:1px solid var(--border); border-right:1px solid var(--border); }
+  .perm-cell { padding:10px 12px; border-bottom:1px solid var(--border); border-right:1px solid var(--border); display:flex; align-items:center; justify-content:center; }
+  .perm-cell.label { justify-content:flex-start; font-size:13px; color:var(--text2); }
+  .perm-check { width:18px; height:18px; border-radius:4px; border:1.5px solid var(--border2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:11px; transition:all .15s; }
+  .perm-check.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* SECURITY CARDS */
+  .security-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  .sec-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+  .sec-title { font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+
+  /* NOTIFICATIONS / ALERTS */
+  .alert { display:flex; align-items:flex-start; gap:10px; padding:12px 16px; border-radius:var(--radius); margin-bottom:10px; }
+  .alert.danger { background:var(--red-bg); border:1px solid rgba(239,68,68,0.2); color:var(--red); }
+  .alert.warning { background:var(--amber-bg); border:1px solid rgba(245,158,11,0.2); color:var(--amber); }
+  .alert.info { background:var(--blue-bg); border:1px solid rgba(59,130,246,0.2); color:var(--blue); }
+
+  /* MODAL */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:none; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; width:480px; max-width:95vw; max-height:90vh; overflow-y:auto; }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .modal-title { font-size:16px; font-weight:600; }
+  .modal-close { background:none; border:none; cursor:pointer; color:var(--text2); font-size:20px; padding:2px; }
+  .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; padding-top:16px; border-top:1px solid var(--border); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px; }
+
+  /* MAINTENANCE GRID */
+  .maint-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .maint-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+  .maint-icon { font-size:28px; margin-bottom:10px; }
+  .maint-title { font-size:14px; font-weight:600; margin-bottom:6px; }
+  .maint-desc { font-size:12px; color:var(--text2); margin-bottom:14px; line-height:1.5; }
+
+  /* TOAST */
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:999; display:flex; flex-direction:column; gap:8px; }
+  .toast { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; font-size:13px; display:flex; align-items:center; gap:10px; animation:slideIn .3s ease; min-width:240px; }
+  .toast.success { border-left:3px solid var(--green); }
+  .toast.error { border-left:3px solid var(--red); }
+  @keyframes slideIn { from { transform:translateX(60px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+  /* RESPONSIVE */
+  @media(max-width:900px) {
+    .stats-grid { grid-template-columns:repeat(2,1fr); }
+    .charts-row { grid-template-columns:1fr; }
+    .two-col, .three-col { grid-template-columns:1fr; }
+    .security-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">SA</div>
+    <div>
+      <div class="logo-text">SuperAdmin</div>
+      <div class="logo-sub">System Control Panel</div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">🏠</span> Dashboard
+    </div>
+    <div class="nav-section">User & Staff</div>
+    <div class="nav-item" onclick="showPage('users',this)">
+      <span class="nav-icon">👥</span> User Management
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item" onclick="showPage('admins',this)">
+      <span class="nav-icon">🛠️</span> Admin Management
+    </div>
+    <div class="nav-section">Catalog</div>
+    <div class="nav-item" onclick="showPage('products',this)">
+      <span class="nav-icon">🛍️</span> Products
+    </div>
+    <div class="nav-item" onclick="showPage('addons',this)">
+      <span class="nav-icon">➕</span> Add-ons
+    </div>
+    <div class="nav-section">Operations</div>
+    <div class="nav-item" onclick="showPage('orders',this)">
+      <span class="nav-icon">📦</span> Orders
+      <span class="nav-badge green">3</span>
+    </div>
+    <div class="nav-item" onclick="showPage('reports',this)">
+      <span class="nav-icon">💰</span> Reports
+    </div>
+    <div class="nav-section">System</div>
+    <div class="nav-item" onclick="showPage('roles',this)">
+      <span class="nav-icon">🔐</span> Roles & Permissions
+    </div>
+    <div class="nav-item" onclick="showPage('settings',this)">
+      <span class="nav-icon">⚙️</span> System Settings
+    </div>
+    <div class="nav-item" onclick="showPage('logs',this)">
+      <span class="nav-icon">🔔</span> Logs / Audit Trail
+      <span class="nav-badge">5</span>
+    </div>
+    <div class="nav-item" onclick="showPage('security',this)">
+      <span class="nav-icon">🚫</span> Security
+    </div>
+    <div class="nav-item" onclick="showPage('maintenance',this)">
+      <span class="nav-icon">🧹</span> Maintenance
+    </div>
+    <div class="nav-item" onclick="showPage('feedback',this)">
+      <span class="nav-icon">💬</span> Feedback
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="admin-card">
+      <div class="admin-av">SA</div>
+      <div>
+        <div class="admin-name">Super Admin</div>
+        <div class="admin-role">Administrator</div>
+      </div>
+      <div class="admin-actions">
+        <button class="icon-btn" title="Settings">⚙️</button>
+        <button class="icon-btn" title="Logout" onclick="showToast('Logged out','error')">🚪</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title" id="header-title">Dashboard</div>
+    <div class="header-search">
+      <span style="color:var(--text3);font-size:13px;">🔍</span>
+      <input type="text" placeholder="Search anything..." />
+    </div>
+    <button class="icon-btn notif-btn" onclick="showPage('logs',document.querySelector('[onclick*=logs]'))">🔔<span class="notif-dot"></span></button>
+    <div class="avatar-btn">SA</div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">👥</span>
+          <span class="stat-label">Total Users</span>
+          <span class="stat-val" style="color:var(--blue)">4,821</span>
+          <span class="stat-sub"><span class="stat-up">▲ 8.2%</span> this month</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🛠️</span>
+          <span class="stat-label">Total Admins</span>
+          <span class="stat-val" style="color:var(--accent2)">14</span>
+          <span class="stat-sub"><span class="stat-up">+2</span> new this week</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">📦</span>
+          <span class="stat-label">Total Orders</span>
+          <span class="stat-val" style="color:var(--amber)">1,247</span>
+          <span class="stat-sub"><span class="stat-up">▲ 12.4%</span> this month</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">💰</span>
+          <span class="stat-label">Revenue Today</span>
+          <span class="stat-val" style="color:var(--green)">₱38,450</span>
+          <span class="stat-sub"><span class="stat-down">▼ 3.1%</span> vs yesterday</span>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="card-header">
+            <span class="card-title">Sales Overview</span>
+            <div class="card-actions">
+              <button class="tab-btn active" onclick="switchChart('week',this)">Week</button>
+              <button class="tab-btn" onclick="switchChart('month',this)">Month</button>
+              <button class="tab-btn" onclick="switchChart('year',this)">Year</button>
+            </div>
+          </div>
+          <canvas id="salesChart" height="100"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="card-header">
+            <span class="card-title">Order Status</span>
+          </div>
+          <canvas id="doughnutChart" height="160"></canvas>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block"></span>Completed</span><span>62%</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block"></span>Processing</span><span>21%</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block"></span>Pending</span><span>11%</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block"></span>Cancelled</span><span>6%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="table-card">
+        <div class="card-header" style="padding:16px">
+          <span class="card-title">Recent Activity</span>
+          <button class="btn btn-outline btn-sm" onclick="showPage('logs',document.querySelector('[onclick*=logs]'))">View All Logs</button>
+        </div>
+        <div>
+          <div class="log-item"><div class="log-dot green"></div><div class="log-content"><div class="log-msg">New user <strong>Maria Santos</strong> registered</div><div class="log-meta">User Registration • 192.168.1.42</div></div><div class="log-time">2 min ago</div></div>
+          <div class="log-item"><div class="log-dot amber"></div><div class="log-content"><div class="log-msg"><strong>Admin Reyes</strong> updated product "Lechon Belly"</div><div class="log-meta">Product Update • Admin Action</div></div><div class="log-time">14 min ago</div></div>
+          <div class="log-item"><div class="log-dot blue"></div><div class="log-content"><div class="log-msg">Order <strong>#ORD-2841</strong> status changed to Completed</div><div class="log-meta">Order Management • System</div></div><div class="log-time">28 min ago</div></div>
+          <div class="log-item"><div class="log-dot red"></div><div class="log-content"><div class="log-msg">Failed login attempt from IP <strong>203.45.67.89</strong></div><div class="log-meta">Security Alert • Brute Force</div></div><div class="log-time">45 min ago</div></div>
+          <div class="log-item"><div class="log-dot green"></div><div class="log-content"><div class="log-msg"><strong>Admin Cruz</strong> approved new admin account</div><div class="log-meta">Admin Management • Approval</div></div><div class="log-time">1 hr ago</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== USER MANAGEMENT ===== -->
+    <div class="page" id="page-users">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">User Management</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Manage all registered users</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('addUserModal')">+ Add User</button>
+      </div>
+      <div class="table-card">
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="🔍 Search users..." />
+          <select class="filter-input" style="width:140px">
+            <option>All Roles</option>
+            <option>User</option>
+            <option>Admin</option>
+            <option>Super Admin</option>
+          </select>
+          <select class="filter-input" style="width:140px">
+            <option>All Status</option>
+            <option>Active</option>
+            <option>Inactive</option>
+            <option>Banned</option>
+          </select>
+          <button class="btn btn-outline btn-sm" style="margin-left:auto">Export CSV</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th><input type="checkbox" /></th>
+            <th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Orders</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="usersTableBody">
+          </tbody>
+        </table>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:12px;color:var(--text2);border-top:1px solid var(--border)">
+          <span>Showing 1–8 of 4,821 users</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm">← Prev</button>
+            <button class="btn btn-primary btn-sm">1</button>
+            <button class="btn btn-outline btn-sm">2</button>
+            <button class="btn btn-outline btn-sm">3</button>
+            <button class="btn btn-outline btn-sm">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ADMIN MANAGEMENT ===== -->
+    <div class="page" id="page-admins">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">Admin Management</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Approve, manage and restrict admin accounts</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('addAdminModal')">+ Add Admin</button>
+      </div>
+      <div class="alert warning"><span>⚠️</span> <span>2 admin accounts are pending approval. Review now.</span></div>
+      <div class="table-card">
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="🔍 Search admins..." />
+          <select class="filter-input" style="width:160px">
+            <option>All Status</option>
+            <option>Active</option>
+            <option>Pending Approval</option>
+            <option>Suspended</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th>Admin</th><th>Email</th><th>Permissions</th><th>Status</th><th>Last Active</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">JR</div><div><div style="font-size:13px;font-weight:500">Juan Reyes</div><div style="font-size:11px;color:var(--text3)">ID: ADM001</div></div></div></td><td>juan.reyes@admin.com</td><td><div style="display:flex;gap:4px;flex-wrap:wrap"><span class="badge accent">Products</span><span class="badge blue">Orders</span></div></td><td><span class="badge green">Active</span></td><td>5 min ago</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="openModal('editPermsModal')">Permissions</button><button class="btn btn-danger btn-sm">Suspend</button></div></td></tr>
+            <tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;color:#0a0c10">MC</div><div><div style="font-size:13px;font-weight:500">Maria Cruz</div><div style="font-size:11px;color:var(--text3)">ID: ADM002</div></div></div></td><td>maria.cruz@admin.com</td><td><div style="display:flex;gap:4px;flex-wrap:wrap"><span class="badge green">Reports</span><span class="badge accent">Users</span></div></td><td><span class="badge green">Active</span></td><td>2 hrs ago</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="openModal('editPermsModal')">Permissions</button><button class="btn btn-danger btn-sm">Suspend</button></div></td></tr>
+            <tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;color:#0a0c10">KD</div><div><div style="font-size:13px;font-weight:500">Kevin Dela Cruz</div><div style="font-size:11px;color:var(--text3)">ID: ADM003</div></div></div></td><td>kevin.dc@admin.com</td><td><span class="badge gray">None assigned</span></td><td><span class="badge amber">Pending</span></td><td>Never</td><td><div class="action-btns"><button class="btn btn-success btn-sm" onclick="showToast('Admin approved','success')">Approve</button><button class="btn btn-danger btn-sm">Reject</button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== PRODUCTS ===== -->
+    <div class="page" id="page-products">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">Product Management</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Full global control over all products</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline">Manage Categories</button>
+          <button class="btn btn-primary" onclick="openModal('addProductModal')">+ Add Product</button>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><span class="stat-label">Total Products</span><span class="stat-val" style="color:var(--accent2)">248</span><span class="stat-sub">across 12 categories</span></div>
+        <div class="stat-card"><span class="stat-label">Low Stock</span><span class="stat-val" style="color:var(--amber)">14</span><span class="stat-sub"><span class="stat-down">needs restocking</span></span></div>
+        <div class="stat-card"><span class="stat-label">Out of Stock</span><span class="stat-val" style="color:var(--red)">6</span><span class="stat-sub">items unavailable</span></div>
+      </div>
+      <div class="table-card">
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="🔍 Search products..." />
+          <select class="filter-input" style="width:160px"><option>All Categories</option><option>Lechon</option><option>BBQ</option><option>Seafood</option><option>Desserts</option></select>
+          <select class="filter-input" style="width:140px"><option>All Stock</option><option>In Stock</option><option>Low Stock</option><option>Out of Stock</option></select>
+        </div>
+        <table>
+          <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:6px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:18px">🍖</div><div><div style="font-weight:500">Lechon Belly (1kg)</div><div style="font-size:11px;color:var(--text3)">SKU: LB-001</div></div></div></td><td>Lechon</td><td>₱850</td><td><div class="progress-bar" style="width:80px;margin-bottom:3px"><div class="progress-fill green" style="width:75%"></div></div><span style="font-size:11px;color:var(--text2)">75 left</span></td><td><span class="badge green">Available</span></td><td><div class="action-btns"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-danger btn-sm">Delete</button></div></td></tr>
+            <tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:6px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:18px">🦐</div><div><div style="font-weight:500">Grilled Prawns</div><div style="font-size:11px;color:var(--text3)">SKU: GP-014</div></div></div></td><td>Seafood</td><td>₱450</td><td><div class="progress-bar" style="width:80px;margin-bottom:3px"><div class="progress-fill amber" style="width:20%"></div></div><span style="font-size:11px;color:var(--amber)">8 left</span></td><td><span class="badge amber">Low Stock</span></td><td><div class="action-btns"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-danger btn-sm">Delete</button></div></td></tr>
+            <tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:6px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:18px">🍮</div><div><div style="font-weight:500">Leche Flan</div><div style="font-size:11px;color:var(--text3)">SKU: LF-022</div></div></div></td><td>Desserts</td><td>₱120</td><td><div class="progress-bar" style="width:80px;margin-bottom:3px"><div class="progress-fill red" style="width:0%"></div></div><span style="font-size:11px;color:var(--red)">0 left</span></td><td><span class="badge red">Out of Stock</span></td><td><div class="action-btns"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-danger btn-sm">Delete</button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== ADD-ONS ===== -->
+    <div class="page" id="page-addons">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">Add-ons Management</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Global add-on control per category or product</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('addAddonModal')">+ New Add-on</button>
+      </div>
+      <div class="table-card">
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="🔍 Search add-ons..." />
+          <select class="filter-input" style="width:160px"><option>All Categories</option><option>Lechon</option><option>BBQ</option><option>Seafood</option></select>
+        </div>
+        <table>
+          <thead><tr><th>Add-on Name</th><th>Assigned To</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>Extra Sauce</td><td><span class="badge blue">All Products</span></td><td>₱20</td><td><div class="toggle" onclick="this.querySelector('.toggle-switch').classList.toggle('on')"><div class="toggle-switch on"></div><span style="font-size:12px;color:var(--text2)">Enabled</span></div></td><td><div class="action-btns"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-danger btn-sm">Remove</button></div></td></tr>
+            <tr><td>Rice Add-on</td><td><span class="badge accent">Lechon</span></td><td>₱40</td><td><div class="toggle" onclick="this.querySelector('.toggle-switch').classList.toggle('on')"><div class="toggle-switch on"></div><span style="font-size:12px;color:var(--text2)">Enabled</span></div></td><td><div class="action-btns"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-danger btn-sm">Remove</button></div></td></tr>
+            <tr><td>Extra Spicy</td><td><span class="badge green">BBQ</span></td><td>Free</td><td><div class="toggle" onclick="this.querySelector('.toggle-switch').classList.toggle('on')"><div class="toggle-switch"></div><span style="font-size:12px;color:var(--text2)">Disabled</span></div></td><td><div class="action-btns"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-danger btn-sm">Remove</button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== ORDERS ===== -->
+    <div class="page" id="page-orders">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">Order Monitoring</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Real-time order tracking with override capability</p>
+        </div>
+        <button class="btn btn-outline">Export Orders</button>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card"><span class="stat-label">Pending</span><span class="stat-val" style="color:var(--amber)">38</span></div>
+        <div class="stat-card"><span class="stat-label">Processing</span><span class="stat-val" style="color:var(--blue)">76</span></div>
+        <div class="stat-card"><span class="stat-label">Completed Today</span><span class="stat-val" style="color:var(--green)">194</span></div>
+        <div class="stat-card"><span class="stat-label">Cancelled</span><span class="stat-val" style="color:var(--red)">12</span></div>
+      </div>
+      <div class="alert info"><span>ℹ️</span><span>3 orders flagged as suspicious. <a href="#" style="color:var(--blue);text-decoration:none;font-weight:500">Review now →</a></span></div>
+      <div class="table-card">
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="🔍 Order ID or customer..." />
+          <select class="filter-input" style="width:160px"><option>All Status</option><option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option></select>
+          <input type="date" class="filter-input" style="width:160px"/>
+        </div>
+        <table>
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:500;color:var(--accent2)">#ORD-2841</td><td>Maria Santos</td><td>Lechon Belly x1, Rice x2</td><td>₱930</td><td><span class="badge green">Completed</span></td><td>Today 10:42</td><td><div class="action-btns"><button class="btn btn-outline btn-sm">View</button><button class="btn btn-danger btn-sm">Override</button></div></td></tr>
+            <tr><td style="font-weight:500;color:var(--accent2)">#ORD-2840</td><td>Jose Bautista</td><td>Grilled Prawns x2</td><td>₱900</td><td><span class="badge blue">Processing</span></td><td>Today 09:30</td><td><div class="action-btns"><button class="btn btn-outline btn-sm">View</button><button class="btn btn-danger btn-sm">Override</button></div></td></tr>
+            <tr style="background:rgba(239,68,68,0.04)"><td style="font-weight:500;color:var(--red)">#ORD-2839 ⚠️</td><td>Unknown User</td><td>Bulk Order x50</td><td>₱42,500</td><td><span class="badge amber">Pending</span></td><td>Today 08:12</td><td><div class="action-btns"><button class="btn btn-danger btn-sm">Investigate</button><button class="btn btn-danger btn-sm">Cancel</button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== REPORTS ===== -->
+    <div class="page" id="page-reports">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:600">Reports & Analytics</h2>
+        <p style="font-size:13px;color:var(--text2);margin-top:4px">Sales, user activity, and product performance</p>
+      </div>
+      <div class="filter-row" style="padding:0;margin-bottom:16px;background:none;border:none">
+        <select class="filter-input" style="width:160px"><option>Daily</option><option>Weekly</option><option selected>Monthly</option><option>Yearly</option></select>
+        <input type="date" class="filter-input" style="width:160px"/>
+        <button class="btn btn-primary btn-sm">Generate Report</button>
+        <button class="btn btn-outline btn-sm" style="margin-left:auto">Export PDF</button>
+      </div>
+      <div class="charts-row" style="grid-template-columns:1fr 1fr">
+        <div class="chart-card"><div class="card-header"><span class="card-title">Monthly Revenue</span></div><canvas id="revenueChart" height="130"></canvas></div>
+        <div class="chart-card"><div class="card-header"><span class="card-title">User Activity</span></div><canvas id="activityChart" height="130"></canvas></div>
+      </div>
+      <div class="table-card">
+        <div class="card-header" style="padding:16px"><span class="card-title">Top Products This Month</span></div>
+        <table>
+          <thead><tr><th>#</th><th>Product</th><th>Units Sold</th><th>Revenue</th><th>Growth</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Lechon Belly (1kg)</td><td>340</td><td>₱289,000</td><td><span class="stat-up">▲ 18%</span></td></tr>
+            <tr><td>2</td><td>Crispy Pata</td><td>210</td><td>₱168,000</td><td><span class="stat-up">▲ 12%</span></td></tr>
+            <tr><td>3</td><td>Grilled Bangus</td><td>195</td><td>₱87,750</td><td><span class="stat-down">▼ 4%</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== ROLES & PERMISSIONS ===== -->
+    <div class="page" id="page-roles">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">Roles & Permissions</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Create roles and assign granular permissions</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('addRoleModal')">+ Create Role</button>
+      </div>
+      <div class="table-card">
+        <div class="card-header" style="padding:16px"><span class="card-title">Permission Matrix</span></div>
+        <div style="padding:0 16px 16px;overflow-x:auto">
+          <div class="perm-grid">
+            <div class="perm-header">Resource</div>
+            <div class="perm-header" style="text-align:center">Super Admin</div>
+            <div class="perm-header" style="text-align:center">Admin A</div>
+            <div class="perm-header" style="text-align:center">Admin B</div>
+            <div class="perm-header" style="text-align:center">Staff</div>
+            <div class="perm-header" style="text-align:center">User</div>
+            <div class="perm-cell label">Products</div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div>
+            <div class="perm-cell label">Orders</div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div>
+            <div class="perm-cell label">Reports</div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div>
+            <div class="perm-cell label">Users</div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div>
+            <div class="perm-cell label">Settings</div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div>
+            <div class="perm-cell label">Security</div><div class="perm-cell"><div class="perm-check on" onclick="this.classList.toggle('on')">✓</div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div><div class="perm-cell"><div class="perm-check" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+        </div>
+        <div style="padding:0 16px 16px"><button class="btn btn-primary btn-sm" onclick="showToast('Permissions saved','success')">Save Changes</button></div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="page" id="page-settings">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:600">System Settings</h2>
+        <p style="font-size:13px;color:var(--text2);margin-top:4px">Configure website name, logo, theme and fees</p>
+      </div>
+      <div class="two-col">
+        <div class="chart-card">
+          <div class="card-title" style="margin-bottom:16px">General</div>
+          <div class="form-group"><label class="form-label">Website Name</label><input class="form-input" value="FoodHub PH" /></div>
+          <div class="form-group"><label class="form-label">Tagline</label><input class="form-input" value="Order Fresh, Eat Well" /></div>
+          <div class="form-group"><label class="form-label">Contact Email</label><input class="form-input" value="admin@foodhubph.com" /></div>
+          <div class="form-group"><label class="form-label">Logo</label><div style="display:flex;gap:10px;align-items:center"><div style="width:50px;height:50px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff">F</div><button class="btn btn-outline btn-sm">Upload New Logo</button></div></div>
+          <div class="form-group"><label class="form-label">Theme</label>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm">Dark</button>
+              <button class="btn btn-outline btn-sm">Light</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title" style="margin-bottom:16px">Fees & Payments</div>
+          <div class="form-group"><label class="form-label">Tax Rate (%)</label><input class="form-input" value="12" type="number" /></div>
+          <div class="form-group"><label class="form-label">Service Fee (%)</label><input class="form-input" value="5" type="number" /></div>
+          <div class="form-group"><label class="form-label">Delivery Fee (₱)</label><input class="form-input" value="50" type="number" /></div>
+          <div class="form-group"><label class="form-label">Min. Order Amount (₱)</label><input class="form-input" value="100" type="number" /></div>
+          <div class="form-group" style="margin-top:20px">
+            <div class="toggle" style="margin-bottom:12px">
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              <span style="font-size:13px">Accept Online Payments</span>
+            </div>
+            <div class="toggle">
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              <span style="font-size:13px">Cash on Delivery</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px"><button class="btn btn-primary" onclick="showToast('Settings saved successfully','success')">Save All Settings</button></div>
+    </div>
+
+    <!-- ===== LOGS ===== -->
+    <div class="page" id="page-logs">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">Logs / Audit Trail</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Full system activity tracking</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline">Export Logs</button>
+          <button class="btn btn-danger" onclick="openModal('clearLogsModal')">Clear Logs</button>
+        </div>
+      </div>
+      <div class="filter-row" style="padding:0;margin-bottom:16px;background:none;border:none">
+        <input class="filter-input" type="text" placeholder="🔍 Search logs..." />
+        <select class="filter-input" style="width:160px"><option>All Types</option><option>Login</option><option>Update</option><option>Delete</option><option>Security</option></select>
+        <select class="filter-input" style="width:160px"><option>All Users</option><option>Admins Only</option><option>Users Only</option></select>
+        <input type="date" class="filter-input" style="width:160px"/>
+      </div>
+      <div class="table-card">
+        <div id="logsContainer">
+          <div class="log-item"><div class="log-dot green"></div><div class="log-content"><div class="log-msg"><strong>Super Admin</strong> logged in</div><div class="log-meta">LOGIN • IP: 192.168.0.1 • Browser: Chrome 121</div></div><div class="log-time">Just now</div></div>
+          <div class="log-item"><div class="log-dot amber"></div><div class="log-content"><div class="log-msg"><strong>Admin Reyes</strong> updated product "Lechon Belly" price from ₱800 to ₱850</div><div class="log-meta">PRODUCT UPDATE • Admin Action • ID: PRD-001</div></div><div class="log-time">14 min ago</div></div>
+          <div class="log-item"><div class="log-dot red"></div><div class="log-content"><div class="log-msg"><strong>System</strong> detected brute force attempt from IP 203.45.67.89</div><div class="log-meta">SECURITY ALERT • Auto-blocked after 5 failed attempts</div></div><div class="log-time">45 min ago</div></div>
+          <div class="log-item"><div class="log-dot blue"></div><div class="log-content"><div class="log-msg"><strong>Admin Cruz</strong> approved new admin account for Kevin Dela Cruz</div><div class="log-meta">ADMIN MANAGEMENT • Account Approval • ID: ADM003</div></div><div class="log-time">1 hr ago</div></div>
+          <div class="log-item"><div class="log-dot amber"></div><div class="log-content"><div class="log-msg"><strong>Admin Reyes</strong> deleted product "Pork Sisig"</div><div class="log-meta">PRODUCT DELETE • Admin Action • ID: PRD-087</div></div><div class="log-time">2 hrs ago</div></div>
+          <div class="log-item"><div class="log-dot green"></div><div class="log-content"><div class="log-msg"><strong>User #4812</strong> placed order #ORD-2841 worth ₱930</div><div class="log-meta">ORDER CREATED • User Action</div></div><div class="log-time">3 hrs ago</div></div>
+          <div class="log-item"><div class="log-dot red"></div><div class="log-content"><div class="log-msg"><strong>Super Admin</strong> force-cancelled order #ORD-2799 (suspicious activity)</div><div class="log-meta">ORDER OVERRIDE • Super Admin Action</div></div><div class="log-time">Yesterday</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECURITY ===== -->
+    <div class="page" id="page-security">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:600">Security Center</h2>
+        <p style="font-size:13px;color:var(--text2);margin-top:4px">IP blocking, login monitoring, and forced logouts</p>
+      </div>
+      <div class="alert danger"><span>🚨</span><span>HIGH ALERT: 3 brute force attempts detected in the last hour from IP 203.45.67.89</span></div>
+      <div class="security-grid">
+        <div class="sec-card">
+          <div class="sec-title"><span>🚫</span> IP Blocking</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <input class="form-input" placeholder="Enter IP address..." style="flex:1"/>
+            <button class="btn btn-danger btn-sm" onclick="showToast('IP blocked','success')">Block IP</button>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">BLOCKED IPs (3)</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg3);border-radius:var(--radius-sm)"><span style="font-size:13px;font-family:monospace">203.45.67.89</span><span style="display:flex;gap:6px;align-items:center"><span class="badge red">Blocked</span><button class="btn btn-outline btn-sm" onclick="showToast('IP unblocked','success')">Unblock</button></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg3);border-radius:var(--radius-sm)"><span style="font-size:13px;font-family:monospace">10.0.0.254</span><span style="display:flex;gap:6px;align-items:center"><span class="badge red">Blocked</span><button class="btn btn-outline btn-sm" onclick="showToast('IP unblocked','success')">Unblock</button></span></div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-title"><span>🔐</span> Login Monitoring</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Failed Attempts Today</span><span style="color:var(--red);font-weight:600">24</span></div><div class="progress-bar"><div class="progress-fill red" style="width:80%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Active Sessions</span><span style="font-weight:600">142</span></div><div class="progress-bar"><div class="progress-fill green" style="width:47%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>2FA Enabled Users</span><span style="color:var(--green);font-weight:600">38%</span></div><div class="progress-bar"><div class="progress-fill amber" style="width:38%"></div></div></div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-title"><span>⚡</span> Force Actions</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-danger" onclick="openModal('forceLogoutModal')">Force Logout All Users</button>
+            <button class="btn btn-outline" onclick="showToast('Session tokens refreshed','success')">Refresh All Sessions</button>
+            <button class="btn btn-outline" onclick="showToast('2FA enforcement enabled','success')">Enforce 2FA for All Admins</button>
+            <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="openModal('lockdownModal')">🔒 Emergency Lockdown</button>
+          </div>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="card-header" style="padding:16px"><span class="card-title">Active Sessions</span></div>
+        <table>
+          <thead><tr><th>User</th><th>IP Address</th><th>Device</th><th>Location</th><th>Started</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Super Admin</td><td style="font-family:monospace">192.168.0.1</td><td>Chrome / Windows</td><td>Manila, PH</td><td>Just now</td><td><span class="badge green">Current</span></td></tr>
+            <tr><td>Admin Reyes</td><td style="font-family:monospace">192.168.0.45</td><td>Firefox / Mac</td><td>Quezon City, PH</td><td>2 hrs ago</td><td><button class="btn btn-danger btn-sm" onclick="showToast('Session terminated','success')">Terminate</button></td></tr>
+            <tr><td>Admin Cruz</td><td style="font-family:monospace">192.168.0.78</td><td>Safari / iPhone</td><td>Makati, PH</td><td>4 hrs ago</td><td><button class="btn btn-danger btn-sm" onclick="showToast('Session terminated','success')">Terminate</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== MAINTENANCE ===== -->
+    <div class="page" id="page-maintenance">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:600">Database & Maintenance</h2>
+        <p style="font-size:13px;color:var(--text2);margin-top:4px">Backup, restore, and system health management</p>
+      </div>
+      <div class="alert warning"><span>⚠️</span><span>Last backup was <strong>3 days ago</strong>. Recommend backing up regularly.</span></div>
+      <div class="maint-grid">
+        <div class="maint-card">
+          <div class="maint-icon">💾</div>
+          <div class="maint-title">Backup Database</div>
+          <div class="maint-desc">Create a full backup of the database including all users, orders, and products. Last backup: April 6, 2026</div>
+          <button class="btn btn-primary" onclick="showToast('Backup started...','success')">Create Backup Now</button>
+        </div>
+        <div class="maint-card">
+          <div class="maint-icon">🔄</div>
+          <div class="maint-title">Restore Data</div>
+          <div class="maint-desc">Restore database from a previous backup file. This will overwrite current data. Use with caution.</div>
+          <button class="btn btn-danger" onclick="openModal('restoreModal')">Restore from Backup</button>
+        </div>
+        <div class="maint-card">
+          <div class="maint-icon">🧹</div>
+          <div class="maint-title">Clear Logs</div>
+          <div class="maint-desc">Remove old system logs older than 30 days. This frees up storage and improves performance.</div>
+          <button class="btn btn-outline" onclick="openModal('clearLogsModal')">Clear Old Logs</button>
+        </div>
+        <div class="maint-card">
+          <div class="maint-icon">🛑</div>
+          <div class="maint-title">Maintenance Mode</div>
+          <div class="maint-desc">Put site in maintenance mode. Users will see a maintenance page. Admins can still access.</div>
+          <div class="toggle" style="margin-top:4px">
+            <div class="toggle-switch" onclick="this.classList.toggle('on');showToast('Maintenance mode toggled','success')"></div>
+            <span style="font-size:13px">Enable Maintenance Mode</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-top:16px">
+        <div class="card-title" style="margin-bottom:14px">System Health</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>CPU Usage</span><span style="color:var(--green);font-weight:600">24%</span></div><div class="progress-bar"><div class="progress-fill green" style="width:24%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>Memory</span><span style="color:var(--amber);font-weight:600">67%</span></div><div class="progress-bar"><div class="progress-fill amber" style="width:67%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>Disk Space</span><span style="color:var(--blue);font-weight:600">41%</span></div><div class="progress-bar"><div class="progress-fill" style="width:41%"></div></div></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:10px">Last checked: April 9, 2026 10:45 AM</div>
+      </div>
+    </div>
+
+    <!-- ===== FEEDBACK ===== -->
+    <div class="page" id="page-feedback">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:600">Feedback & Complaints</h2>
+          <p style="font-size:13px;color:var(--text2);margin-top:4px">Review and manage user feedback</p>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><span class="stat-label">Total Feedback</span><span class="stat-val">128</span></div>
+        <div class="stat-card"><span class="stat-label">Pending Review</span><span class="stat-val" style="color:var(--amber)">14</span></div>
+        <div class="stat-card"><span class="stat-label">Avg. Rating</span><span class="stat-val" style="color:var(--green)">4.6 ⭐</span></div>
+      </div>
+      <div class="table-card">
+        <div class="filter-row">
+          <input class="filter-input" type="text" placeholder="🔍 Search feedback..." />
+          <select class="filter-input" style="width:160px"><option>All Types</option><option>Complaint</option><option>Suggestion</option><option>Praise</option></select>
+          <select class="filter-input" style="width:140px"><option>All Status</option><option>Pending</option><option>Resolved</option></select>
+        </div>
+        <table>
+          <thead><tr><th>User</th><th>Type</th><th>Message</th><th>Rating</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Maria Santos</td><td><span class="badge red">Complaint</span></td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Order arrived cold and late...</td><td>⭐ 2</td><td>Apr 9</td><td><span class="badge amber">Pending</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Marked as resolved','success')">Resolve</button></td></tr>
+            <tr><td>Jose Bautista</td><td><span class="badge green">Praise</span></td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Best lechon I've ever had!</td><td>⭐ 5</td><td>Apr 8</td><td><span class="badge green">Resolved</span></td><td><button class="btn btn-outline btn-sm">View</button></td></tr>
+            <tr><td>Anon User</td><td><span class="badge blue">Suggestion</span></td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Please add GCash payment...</td><td>⭐ 4</td><td>Apr 7</td><td><span class="badge amber">Pending</span></td><td><button class="btn btn-outline btn-sm" onclick="showToast('Marked as resolved','success')">Resolve</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODALS -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add New User</span><button class="modal-close" onclick="closeModal('addUserModal')">×</button></div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">First Name</label><input class="form-input" placeholder="Juan"/></div>
+      <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" placeholder="Dela Cruz"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" placeholder="juan@email.com" type="email"/></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-input" placeholder="••••••••" type="password"/></div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">Role</label><select class="form-input"><option>User</option><option>Admin</option><option>Super Admin</option></select></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-input"><option>Active</option><option>Inactive</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('addUserModal');showToast('User created successfully','success')">Create User</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editPermsModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Admin Permissions</span><button class="modal-close" onclick="closeModal('editPermsModal')">×</button></div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Admin: <strong>Juan Reyes</strong></p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:var(--radius-sm)"><span style="font-size:13px">Can manage Products</span><div class="toggle-switch on" onclick="this.classList.toggle('on')"></div></label>
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:var(--radius-sm)"><span style="font-size:13px">Can view Reports</span><div class="toggle-switch" onclick="this.classList.toggle('on')"></div></label>
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:var(--radius-sm)"><span style="font-size:13px">Can update Orders</span><div class="toggle-switch on" onclick="this.classList.toggle('on')"></div></label>
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:var(--radius-sm)"><span style="font-size:13px">Can manage Users</span><div class="toggle-switch" onclick="this.classList.toggle('on')"></div></label>
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:var(--radius-sm)"><span style="font-size:13px">Can access Security</span><div class="toggle-switch" onclick="this.classList.toggle('on')"></div></label>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('editPermsModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('editPermsModal');showToast('Permissions updated','success')">Save</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="forceLogoutModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Force Logout All Users</span><button class="modal-close" onclick="closeModal('forceLogoutModal')">×</button></div>
+    <div class="alert danger" style="margin-bottom:16px"><span>⚠️</span><span>This will immediately terminate ALL active sessions including admins (except your current session).</span></div>
+    <p style="font-size:13px;color:var(--text2)">Affected sessions: <strong style="color:var(--text)">142 active sessions</strong></p>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('forceLogoutModal')">Cancel</button><button class="btn btn-danger" onclick="closeModal('forceLogoutModal');showToast('All users logged out','success')">Confirm Force Logout</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="clearLogsModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Clear System Logs</span><button class="modal-close" onclick="closeModal('clearLogsModal')">×</button></div>
+    <div class="form-group"><label class="form-label">Delete logs older than</label><select class="form-input"><option>30 days</option><option>60 days</option><option>90 days</option><option>All logs</option></select></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('clearLogsModal')">Cancel</button><button class="btn btn-danger" onclick="closeModal('clearLogsModal');showToast('Logs cleared','success')">Clear Logs</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="restoreModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Restore Database</span><button class="modal-close" onclick="closeModal('restoreModal')">×</button></div>
+    <div class="alert danger" style="margin-bottom:16px"><span>🚨</span><span>WARNING: Restoring will OVERWRITE all current data. This cannot be undone.</span></div>
+    <div class="form-group"><label class="form-label">Select Backup File</label>
+      <select class="form-input"><option>backup_2026-04-06_02:00.sql</option><option>backup_2026-04-03_02:00.sql</option><option>backup_2026-03-31_02:00.sql</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Type "RESTORE" to confirm</label><input class="form-input" placeholder="RESTORE"/></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('restoreModal')">Cancel</button><button class="btn btn-danger" onclick="closeModal('restoreModal');showToast('Restoration started...','success')">Restore Now</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addProductModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add New Product</span><button class="modal-close" onclick="closeModal('addProductModal')">×</button></div>
+    <div class="form-group"><label class="form-label">Product Name</label><input class="form-input" placeholder="e.g. Lechon Belly 1kg"/></div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">Category</label><select class="form-input"><option>Lechon</option><option>BBQ</option><option>Seafood</option><option>Desserts</option></select></div>
+      <div class="form-group"><label class="form-label">Price (₱)</label><input class="form-input" type="number" placeholder="0"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Initial Stock</label><input class="form-input" type="number" placeholder="0"/></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" rows="3" placeholder="Product description..."></textarea></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('addProductModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('addProductModal');showToast('Product added','success')">Add Product</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addAdminModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Admin Account</span><button class="modal-close" onclick="closeModal('addAdminModal')">×</button></div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">First Name</label><input class="form-input" placeholder="First Name"/></div>
+      <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" placeholder="Last Name"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" placeholder="admin@domain.com"/></div>
+    <div class="form-group"><label class="form-label">Temporary Password</label><input class="form-input" type="password" placeholder="••••••••"/></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('addAdminModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('addAdminModal');showToast('Admin account created','success')">Create Admin</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addAddonModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">New Add-on</span><button class="modal-close" onclick="closeModal('addAddonModal')">×</button></div>
+    <div class="form-group"><label class="form-label">Add-on Name</label><input class="form-input" placeholder="e.g. Extra Sauce"/></div>
+    <div class="two-col">
+      <div class="form-group"><label class="form-label">Price (₱)</label><input class="form-input" type="number" placeholder="0 for free"/></div>
+      <div class="form-group"><label class="form-label">Assign To</label><select class="form-input"><option>All Products</option><option>Lechon</option><option>BBQ</option><option>Seafood</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('addAddonModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('addAddonModal');showToast('Add-on created','success')">Save Add-on</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addRoleModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Create New Role</span><button class="modal-close" onclick="closeModal('addRoleModal')">×</button></div>
+    <div class="form-group"><label class="form-label">Role Name</label><input class="form-input" placeholder="e.g. Content Manager"/></div>
+    <div class="form-group"><label class="form-label">Permissions</label>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px"><input type="checkbox"/> Manage Products</label>
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px"><input type="checkbox"/> View Reports</label>
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px"><input type="checkbox"/> Manage Orders</label>
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px"><input type="checkbox"/> Manage Users</label>
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px"><input type="checkbox"/> Access Security</label>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('addRoleModal')">Cancel</button><button class="btn btn-primary" onclick="closeModal('addRoleModal');showToast('Role created','success')">Create Role</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="lockdownModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">🔒 Emergency Lockdown</span><button class="modal-close" onclick="closeModal('lockdownModal')">×</button></div>
+    <div class="alert danger" style="margin-bottom:16px"><span>🚨</span><span>EMERGENCY LOCKDOWN will block all access to the system for non-super-admin users immediately.</span></div>
+    <div class="form-group"><label class="form-label">Reason for Lockdown</label><textarea class="form-input" rows="3" placeholder="Describe the emergency..."></textarea></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('lockdownModal')">Cancel</button><button class="btn btn-danger" onclick="closeModal('lockdownModal');showToast('System locked down!','error')">Initiate Lockdown</button></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// NAVIGATION
+const titles = {
+  dashboard:'Dashboard', users:'User Management', admins:'Admin Management',
+  products:'Product Management', addons:'Add-ons Management', orders:'Order Monitoring',
+  reports:'Reports & Analytics', roles:'Roles & Permissions', settings:'System Settings',
+  logs:'Logs / Audit Trail', security:'Security Center', maintenance:'Maintenance', feedback:'Feedback'
+};
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  document.getElementById('header-title').textContent = titles[id]||id;
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+// TOAST
+function showToast(msg, type='success') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${type==='success'?'✓':'✗'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// USERS TABLE
+const users = [
+  {name:'Maria Santos',email:'maria@gmail.com',role:'User',status:'active',login:'2 min ago',orders:8},
+  {name:'Jose Bautista',email:'jose.b@gmail.com',role:'User',status:'active',login:'1 hr ago',orders:14},
+  {name:'Ana Reyes',email:'ana.r@email.com',role:'Admin',status:'active',login:'3 hrs ago',orders:0},
+  {name:'Kevin Cruz',email:'kcruz@email.com',role:'User',status:'inactive',login:'2 days ago',orders:3},
+  {name:'Liza Santos',email:'liza@mail.com',role:'User',status:'banned',login:'Never',orders:1},
+  {name:'Mark Torres',email:'mark.t@mail.com',role:'User',status:'active',login:'5 hrs ago',orders:22},
+  {name:'Grace Lim',email:'grace@mail.com',role:'User',status:'active',login:'Yesterday',orders:7},
+  {name:'Paul Gomez',email:'paul.g@mail.com',role:'User',status:'inactive',login:'1 week ago',orders:2},
+];
+function renderUsers() {
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = users.map(u => {
+    const initials = u.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+    const statusClass = u.status==='active'?'green':u.status==='banned'?'red':'amber';
+    const roleClass = u.role==='Admin'||u.role==='Super Admin'?'accent':'blue';
+    return `<tr>
+      <td><input type="checkbox"/></td>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--accent2);flex-shrink:0">${initials}</div>
+        <div><div style="font-size:13px;font-weight:500">${u.name}</div></div>
+      </div></td>
+      <td style="color:var(--text2)">${u.email}</td>
+      <td><span class="badge ${roleClass}">${u.role}</span></td>
+      <td><span class="badge ${statusClass}">${u.status.charAt(0).toUpperCase()+u.status.slice(1)}</span></td>
+      <td style="color:var(--text2)">${u.login}</td>
+      <td>${u.orders}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-outline btn-sm" onclick="openModal('addUserModal')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="showToast('User banned','error')">${u.status==='banned'?'Unban':'Ban'}</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+renderUsers();
+
+// CHARTS
+const chartDefaults = {
+  plugins: { legend: { display:false } },
+  scales: {
+    x: { grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#555a68', font:{size:11} } },
+    y: { grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#555a68', font:{size:11} } }
+  }
+};
+
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+const salesData = {
+  week: { labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], data:[12400,18200,14800,22100,19600,28400,16800] },
+  month: { labels:['W1','W2','W3','W4'], data:[82000,96000,74000,110000] },
+  year: { labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], data:[280000,320000,290000,380000,360000,420000,398000,450000,380000,420000,390000,480000] }
+};
+let salesChart = new Chart(salesCtx, {
+  type:'bar',
+  data: { labels: salesData.week.labels, datasets:[{ data: salesData.week.data, backgroundColor:'rgba(108,99,255,0.7)', borderRadius:4, hoverBackgroundColor:'#6c63ff' }] },
+  options: { ...chartDefaults, responsive:true }
+});
+
+function switchChart(period, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const d = salesData[period];
+  salesChart.data.labels = d.labels;
+  salesChart.data.datasets[0].data = d.data;
+  salesChart.update();
+}
+
+const dCtx = document.getElementById('doughnutChart').getContext('2d');
+new Chart(dCtx, {
+  type:'doughnut',
+  data: { datasets:[{ data:[62,21,11,6], backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444'], borderWidth:0, hoverOffset:4 }] },
+  options: { plugins:{ legend:{ display:false } }, cutout:'72%', responsive:true }
+});
+
+const revCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revCtx, {
+  type:'line',
+  data: { labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets:[{ data:[280000,320000,290000,380000,360000,420000,398000,450000,380000,420000,390000,480000], borderColor:'#6c63ff', backgroundColor:'rgba(108,99,255,0.1)', fill:true, tension:0.4, pointRadius:3, pointBackgroundColor:'#6c63ff' }]
+  },
+  options: { ...chartDefaults, responsive:true }
+});
+
+const actCtx = document.getElementById('activityChart').getContext('2d');
+new Chart(actCtx, {
+  type:'bar',
+  data: { labels:['Jan','Feb','Mar','Apr','May','Jun'],
+    datasets:[
+      { label:'New Users', data:[320,410,380,520,460,610], backgroundColor:'rgba(34,197,94,0.7)', borderRadius:3 },
+      { label:'Orders', data:[840,920,780,1100,980,1240], backgroundColor:'rgba(59,130,246,0.7)', borderRadius:3 }
+    ]
+  },
+  options: { plugins:{ legend:{ display:true, labels:{ color:'#8b909e', font:{size:11} } } }, scales: chartDefaults.scales, responsive:true }
+});
+</script>
+</body>
+</html>

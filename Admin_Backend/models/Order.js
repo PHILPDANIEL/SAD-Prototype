@@ -9,7 +9,7 @@ const schema = new mongoose.Schema({
   items: [
     {
       name: String,
-      qty: Number,
+      qty: Number,z
       price: Number
     }
   ],

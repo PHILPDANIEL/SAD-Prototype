@@ -1165,7 +1165,7 @@ export default {
   transform: translateX(-50%) translateY(12px);
 }
 
-/* ── Responsive ── */
+
 @media (max-width: 768px) {
   .orders-page { padding: 1.25rem 1rem; }
   .filters-bar { flex-direction: column; align-items: stretch; }

@@ -19,8 +19,8 @@ mongoose.connection.once("open", () => {
 })
 
 app.use("/api/products", productRoutes)
-app.use("/api/orders", orderRoutes)
-app.use("/api/users", userRoutes)
+app.use("/api/orders", require("./routes/order"))
+app.use("/api/user", require("./routes/user"))
 app.use("/api/auth", authRoutes)
 
 app.listen(5001, () => {
